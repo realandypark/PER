@@ -1,0 +1,1 @@
+This tool calculates the expected change in the Price-to-Earnings (P/E) ratio based on projected earnings growth. By inputting the current P/E ratio and expected EPS growth rate, the tool estimates how shifts in earnings will influence the P/E ratio. This helps investors understand how future earnings performance could impact the valuation of a company or index.
