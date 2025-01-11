@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .chart-wrapper {
+            height: 500px;
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .input-container {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+        }
+        label {
+            display: inline-block;
+            width: 180px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #e0e0e0;
+        }
+        input[type="number"] {
+            width: 120px;
+            padding: 8px 12px;
+            margin-right: 10px;
+            background: #404040;
+            border: 1px solid #505050;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #707070;
+        }
+        .pe-display {
+            font-size: 14px;
+            color: #e0e0e0;
+            margin-bottom: 5px;
+        }
+        h2 {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .explanation {
+            margin-top: 24px;
+            padding: 20px;
+            background-color: #2d2d2d;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .disclaimer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #888;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>EPS Growth & P/E Projection Model</h2>
+        
+        <div class="controls">
+            <div class="pe-display">P/E Ratio: <span id="currentPE">20.00</span></div>
+            
+            <div class="input-container">
+                <label>Current Share Price ($)</label>
+                <input type="number" id="sharePrice" value="100" min="0" step="0.01">
+            </div>
+            
+            <div class="input-container">
+                <label>Current EPS ($)</label>
+                <input type="number" id="currentEPS" value="5" min="0" step="0.01">
+            </div>
+            
+            <div class="input-container">
+                <label>Expected EPS CAGR (%)</label>
+                <input type="number" id="growthRate" value="15" min="-100" max="100" step="0.1">
+            </div>
+
+            <div class="input-container">
+                <label>Forecast Years</label>
+                <input type="number" id="forecastYears" value="5" min="1" max="20" step="1">
+            </div>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="projectionChart"></canvas>
+        </div>
+
+        <div class="explanation">
+            <h4>Understanding P/E Ratio:</h4>
+            <p>P/E Ratio = Share Price / Earnings Per Share (EPS)</p>
+            <p>The P/E ratio helps investors assess a company's valuation by showing how much they're paying for each dollar of earnings. A high P/E might indicate that investors expect higher growth in the future, while a low P/E might suggest the stock is undervalued or has limited growth prospects.</p>
+            
+            <div class="disclaimer">
+                <p><strong>Disclaimer:</strong> This tool is intended for informational and educational purposes only and does not constitute financial advice. The predictions, calculations, or insights provided are based on historical data and statistical models, and there is no guarantee of future performance. Users should carefully consider their financial situation and consult with a qualified financial advisor before making any investment decisions. The tool's results should not be relied upon as the sole basis for any investment or trading decisions.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let projectionChart;
+
+        function updateProjectionChart() {
+            const sharePrice = parseFloat(document.getElementById('sharePrice').value);
+            const currentEPS = parseFloat(document.getElementById('currentEPS').value);
+            const growthRate = parseFloat(document.getElementById('growthRate').value) / 100;
+            const years = parseInt(document.getElementById('forecastYears').value);
+
+            const labels = Array.from({length: years + 1}, (_, i) => `Year ${i}`);
+            
+            // Calculate future EPS with CAGR
+            const epsData = Array.from({length: years + 1}, (_, i) => 
+                currentEPS * Math.pow(1 + growthRate, i)
+            );
+
+            // Calculate P/E ratio (Price/EPS)
+            const peData = epsData.map(eps => sharePrice / eps);
+
+            if (projectionChart) {
+                projectionChart.destroy();
+            }
+
+            Chart.defaults.color = '#e0e0e0';
+            Chart.defaults.borderColor = '#404040';
+
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            projectionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'EPS ($)',
+                            data: epsData.map(v => v.toFixed(2)),
+                            borderColor: '#fb8b1e',
+                            tension: 0.4,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'P/E Ratio',
+                            data: peData.map(v => v.toFixed(2)),
+                            borderColor: '#0068ff',
+                            tension: 0.4,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'EPS ($)',
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: '#404040'
+                            }
+                        },
+                        y2: {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'P/E Ratio',
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#2d2d2d',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e0e0e0',
+                            borderColor: '#404040',
+                            borderWidth: 1
+                        },
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0',
+                                font: {
+                                    family: "'Inter', sans-serif"
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePE() {
+            const sharePrice = parseFloat(document.getElementById('sharePrice').value);
+            const currentEPS = parseFloat(document.getElementById('currentEPS').value);
+            const peRatio = sharePrice / currentEPS;
+            document.getElementById('currentPE').textContent = peRatio.toFixed(2);
+        }
+
+        function updateAll() {
+            updatePE();
+            updateProjectionChart();
+        }
+
+        const inputs = ['sharePrice', 'currentEPS', 'growthRate', 'forecastYears'];
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                if (this.value && !isNaN(this.value)) {
+                    updateAll();
+                }
+            });
+        });
+
+        // Initial render
+        updateAll();
+    </script>
+</body>
+</html>
